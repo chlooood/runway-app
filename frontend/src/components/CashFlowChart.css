@@ -1,0 +1,51 @@
+.cash-flow__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cash-flow h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.cash-flow__legend {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cash-flow__legend li::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-top: 3px solid;
+}
+
+.cash-flow__legend .is-actual::before {
+  border-color: var(--actual);
+}
+
+.cash-flow__legend .is-projected::before {
+  border-top-style: dashed;
+  border-color: var(--projected);
+}
+
+.cash-flow__legend .is-goal::before {
+  border-top-style: dotted;
+  border-color: var(--goal);
+}
+
+.cash-flow__chart {
+  margin-left: -8px;
+}

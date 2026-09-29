@@ -38,3 +38,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** compute cuts in the backend service instead of the React component — the alternative puts business rules where pytest can't reach them and would need re-implementing for any other client.
 - **Verified:** 12/12 pytest pass; `tsc -b` clean. Seeded forecast: $13,576.38 projected vs $5,000 (on track, no cuts); Toronto toggle $13,001.97.
 
+## 2026-09-29 — Frontend: goal card, cash flow chart, category breakdown, city toggle
+- **Built:** `frontend/src/components/{CityToggle,GoalProgressCard,CashFlowChart,CategoryBreakdown}.tsx` (+ co-located CSS), `hooks/useRunwayData.ts` (fetching + discriminated-union state), `utils/format.ts`, `App.tsx` (city state + layout only), warm palette tokens in `index.css`, Nunito font; removed Vite template assets.
+- **Concepts:** Component Composition (small typed-prop components), Separation of Concerns (data hook vs presentational components), Race Condition handling (stale responses ignored on city switch), Accessibility (`aria-pressed` toggle, `role="progressbar"`).
+- **Why:** a `useRunwayData` hook returning a discriminated union instead of fetching inside each component — the alternative duplicates loading/error logic per component and lets them disagree about which city is shown.
+- **Verified:** `tsc -b` + `oxlint` clean; ran API + Vite locally and checked in browser: goal card, chart (actual/projected/goal/today lines), breakdown, and city toggle updating all three.
+

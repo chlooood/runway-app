@@ -1,0 +1,49 @@
+.city-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.city-toggle__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 18px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.city-toggle__option:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.city-toggle__option[aria-pressed='true'] {
+  background: var(--actual);
+  color: #fff;
+}
+
+.city-toggle__option:disabled {
+  cursor: progress;
+}
+
+.city-toggle__option:focus-visible {
+  outline: 2px solid var(--actual);
+  outline-offset: 2px;
+}
+
+.city-toggle__name {
+  font-weight: 700;
+}
+
+.city-toggle__rate {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
