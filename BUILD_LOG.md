@@ -20,3 +20,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** seeded, date-pinned generation rather than plain `random` + `date.today()` — the alternative gives different data every run, so forecast numbers and screenshots can't be reproduced or compared.
 - **Verified:** same seed produces identical rows, different seed differs, no future-dated expenses; balance to date $9,427.02.
 
+## 2026-09-28 — Forecast service, endpoint, unit tests
+- **Built:** `app/services/forecast.py` (`forecast_goal`, `monthly_spend_by_city`), `app/schemas/forecast.py`, `app/routers/forecast.py` → `GET /goals/{id}/forecast?city=&as_of=`, `tests/test_forecast.py` (8 cases), `pytest.ini`. Rule: current balance + known future income up to target date − per-city monthly spend rate, applied daily; returns daily actual + projected points for the chart.
+- **Concepts:** Testability, Pure Functions (functional core / imperative shell), Layered Architecture, Structural Typing (`Protocol` inputs).
+- **Why:** pure service taking plain values instead of logic inline in the route — the alternative can only be tested through HTTP with a live database, making the one piece of real business logic the hardest to prove correct.
+- **Verified:** 8/8 pytest pass (0.3s). Seeded data: Vancouver projects $3,257.20 vs $5,000 (−$1,742.80); Toronto toggle $1,947.23; unknown city → 422, missing goal → 404.
+
