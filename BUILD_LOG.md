@@ -26,3 +26,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** pure service taking plain values instead of logic inline in the route — the alternative can only be tested through HTTP with a live database, making the one piece of real business logic the hardest to prove correct.
 - **Verified:** 8/8 pytest pass (0.3s). Seeded data: Vancouver projects $3,257.20 vs $5,000 (−$1,742.80); Toronto toggle $1,947.23; unknown city → 422, missing goal → 404.
 
+## 2026-09-28 — Config module, CORS, typed frontend API client
+- **Built:** `backend/app/config.py` (single place for env config; `database.py`, Alembic, `main.py` import from it); CORS middleware in `main.py` from `CORS_ORIGINS`; frontend `strict` TS, `src/env.d.ts`, `.env.example` (`VITE_API_BASE_URL`), `src/api/types.ts` (wire + app types), `src/api/client.ts` (`getGoals`, `getIncomeEvents`, `getExpenses`, `getForecast`).
+- **Concepts:** Principle of Least Privilege (CORS allow-list, not `*`), Environment-Based Configuration, Type Safety (`strict`, typed responses), Adapter Pattern (wire → app types at one boundary).
+- **Why:** convert money strings to numbers once in the client instead of in each component — the alternative scatters `Number(...)` calls through the UI, and one missed call quietly turns `+` into string concatenation.
+- **Verified:** preflight from `localhost:5173` → 200, other origin → 400; `tsc -b` and `oxlint` clean; 8/8 pytest still pass; Alembic still resolves config.
+
