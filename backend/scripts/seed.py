@@ -2,7 +2,9 @@
 
 Scenario: a student on a Toronto co-op term (May-Aug 2026, biweekly pay) who
 moves back to Vancouver for a school term (Sept-Dec, no work income) and is
-saving for an exchange term that starts in January 2027.
+saving for an exchange term that starts in January 2027. Housing, groceries,
+and phone are covered (e.g. living with family), so spending is transit plus
+discretionary categories. The student starts May with some savings.
 
 Generation is deterministic: the same --seed and --as-of always produce the
 same rows. Expenses are only generated up to --as-of (they are "actuals");
@@ -27,9 +29,13 @@ from app.models import Expense, Goal, IncomeEvent
 
 DATA_START = dt.date(2026, 5, 1)
 
+# There's no separate balance table, so savings carried into May are recorded as
+# an income event on the first day. The forecast treats it like any other inflow.
+STARTING_SAVINGS = Decimal("2000.00")
+
 COOP_FIRST_PAYDAY = dt.date(2026, 5, 8)
 COOP_LAST_DAY = dt.date(2026, 8, 31)
-COOP_NET_PAY = Decimal("2300.00")  # per biweekly paycheck, after tax
+COOP_NET_PAY = Decimal("1700.00")  # per biweekly paycheck, after tax
 
 # Quarterly GST/HST credit: one past payment plus known future ones.
 GST_CREDIT = Decimal("130.25")
@@ -37,20 +43,18 @@ GST_CREDIT_DATES = [dt.date(2026, 7, 3), dt.date(2026, 10, 5), dt.date(2027, 1, 
 
 GOAL = {"name": "Exchange fund", "target_amount": Decimal("5000.00"), "target_date": dt.date(2027, 1, 4)}
 
-# Monthly spending baseline per city, by category. Toronto rent is a summer sublet,
-# Vancouver rent is a shared place near campus with a U-Pass instead of a TTC pass.
+# Monthly spending baseline per city, by category. No rent, groceries, or phone:
+# those are covered. Toronto has a monthly TTC pass; Vancouver has a U-Pass.
 CITY_BASELINES = {
-    "Toronto": {"rent": 1400, "groceries": 360, "transit": 156, "dining": 220,
-                "entertainment": 110, "phone": 45, "misc": 100},
-    "Vancouver": {"rent": 1150, "groceries": 380, "transit": 60, "dining": 160,
-                  "entertainment": 80, "phone": 45, "misc": 80},
+    "Toronto": {"transit": 156, "dining": 220, "entertainment": 110, "misc": 100},
+    "Vancouver": {"transit": 60, "dining": 160, "entertainment": 80, "misc": 80},
 }
 
 # Fixed bills: (category, day of month). Charged at exactly the baseline amount.
-FIXED_BILLS = [("rent", 1), ("transit", 1), ("phone", 15)]
+FIXED_BILLS = [("transit", 1)]
 
 # Variable spending: (category, min, max) transactions per month, amounts jittered.
-VARIABLE_SPEND = [("groceries", 4, 5), ("dining", 4, 8), ("entertainment", 2, 4), ("misc", 1, 3)]
+VARIABLE_SPEND = [("dining", 4, 8), ("entertainment", 2, 4), ("misc", 1, 3)]
 
 
 def city_for(day: dt.date) -> str:
@@ -69,7 +73,7 @@ def build_seed_data(as_of: dt.date, seed: int) -> tuple[list[IncomeEvent], list[
     rng = fake.random
 
     employer = fake.company()
-    income = []
+    income = [IncomeEvent(date=DATA_START, amount=STARTING_SAVINGS, label="Starting savings")]
     payday = COOP_FIRST_PAYDAY
     while payday <= COOP_LAST_DAY:
         income.append(IncomeEvent(date=payday, amount=COOP_NET_PAY, label=f"Co-op paycheck ({employer})"))
