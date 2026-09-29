@@ -52,6 +52,19 @@ const toForecast = (f: ApiForecast): Forecast => ({
   monthlyCutNeeded: money(f.monthly_cut_needed),
   suggestedCuts: moneyMap(f.suggested_cuts),
   cutsCloseGap: f.cuts_close_gap,
+  stays: f.stays.map((s) => ({
+    label: s.label,
+    city: s.city,
+    startDate: s.start_date,
+    endDate: s.end_date,
+    monthlyBudget: money(s.monthly_budget),
+    upfrontCost: money(s.upfront_cost),
+  })),
+  horizonEnd: f.horizon_end,
+  projectedEndBalance: money(f.projected_end_balance),
+  lowestBalance: money(f.lowest_balance),
+  lowestBalanceDate: f.lowest_balance_date,
+  runsOutOn: f.runs_out_on,
   points: f.points.map((p) => ({ ...p, balance: money(p.balance) })),
 })
 

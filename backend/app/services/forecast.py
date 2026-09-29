@@ -36,6 +36,15 @@ class GoalLike(Protocol):
     target_date: dt.date
 
 
+class StayLike(Protocol):
+    label: str
+    city: str
+    start_date: dt.date
+    end_date: dt.date
+    monthly_budget: Decimal
+    upfront_cost: Decimal
+
+
 class UnknownCityError(ValueError):
     """Raised when a forecast is requested for a city with no expense history."""
 
@@ -45,6 +54,17 @@ class ForecastPoint:
     date: dt.date
     balance: Decimal
     projected: bool  # False = actual history, True = forecast
+    city: str | None = None  # projected points: whose cost baseline applied that day
+
+
+@dataclass(frozen=True)
+class StayWindow:
+    label: str
+    city: str
+    start_date: dt.date
+    end_date: dt.date
+    monthly_budget: Decimal
+    upfront_cost: Decimal
 
 
 @dataclass(frozen=True)
@@ -64,6 +84,13 @@ class Forecast:
     monthly_cut_needed: Decimal  # 0 when on track or the target date has passed
     suggested_cuts: dict[str, Decimal]  # per flexible category, per month
     cuts_close_gap: bool  # False if cutting all flexible spending still falls short
+    # Beyond the goal date: the projection runs until the last planned stay ends.
+    stays: list[StayWindow]
+    horizon_end: dt.date
+    projected_end_balance: Decimal
+    lowest_balance: Decimal
+    lowest_balance_date: dt.date
+    runs_out_on: dt.date | None  # first projected day below $0, if any
     points: list[ForecastPoint]
 
 
@@ -124,28 +151,35 @@ def forecast_goal(
     expenses: Sequence[ExpenseLike],
     as_of: dt.date,
     city: str | None = None,
+    stays: Sequence[StayLike] = (),
 ) -> Forecast:
-    """Project the balance from `as_of` to the goal's target date and check it against the target.
+    """Project the balance day by day from `as_of`, check it against the goal, and keep
+    going until the last planned stay (e.g. an exchange term) ends.
 
-    Rule:
-        projected balance = current balance
-                          + known income dated after as_of, up to and including the target date
-                          - monthly spend rate for `city`, applied evenly per day
+    Rule, for each future day:
+        balance += known income that day
+                 - daily spend: the planned stay's monthly_budget if the day falls in one,
+                   otherwise the historical monthly rate for `city`
+                 - a stay's upfront_cost (flights, deposit) on its first day
 
     - Current balance is income minus expenses dated on or before `as_of`, starting from $0.
-    - `city` picks which city's historical spend rate to project with (the city toggle).
-      It defaults to the city of the most recent expense, i.e. where the student lives now.
-      In the Runway scenario each income season was spent in one city, so the city rate
-      doubles as the "expense rate for this season".
-    - If the projection falls short, the shortfall is spread evenly over the months left
+    - `city` picks the home baseline (the city toggle): which city's historical spend rate
+      applies on days outside planned stays. It defaults to the city of the most recent
+      expense, i.e. where the student lives now. In the Runway scenario each income season
+      was spent in one city, so the city rate doubles as the "expense rate for this season".
+    - Planned stays have no history, so their cost comes from their budget, not from data.
+    - The goal is judged on the balance at its target date, even when the projection runs
+      longer. If it falls short, the shortfall is spread over the months left
       (monthly_cut_needed) and split across flexible categories by `suggest_cuts`.
+    - Over the whole horizon, reports the lowest balance and the first day it goes below $0.
 
     Does not handle:
     - A starting balance from before the first recorded transaction.
     - Future-dated expenses (e.g. a known tuition bill); they are ignored, not subtracted.
-    - Spending that changes over the horizon (e.g. moving to the exchange city in January),
-      inflation, interest, or taxes on income.
-    - A target date on or before `as_of`: no projection is made; projected = current balance.
+    - Overlapping stays: the one that starts first wins on overlapping days.
+    - Currency: stay budgets are assumed to be in the same currency as everything else.
+    - Inflation, interest, or taxes on income.
+    - A target date on or before `as_of`: projected balance for the goal = current balance.
 
     Raises UnknownCityError if `city` is given but has no expense history.
     """
@@ -178,16 +212,39 @@ def forecast_goal(
         day += dt.timedelta(days=1)
     current_balance = balance
 
+    # Only stays that still have days left matter. Upfront costs are charged on the first
+    # day of a stay; for a stay that has already started, assume they were already paid.
+    upcoming = sorted((s for s in stays if s.end_date > as_of), key=lambda s: s.start_date)
+    upfront_by_day: dict[dt.date, Decimal] = defaultdict(Decimal)
+    for s in upcoming:
+        if s.start_date > as_of:
+            upfront_by_day[s.start_date] += s.upfront_cost
+    horizon_end = max([goal.target_date, *(s.end_date for s in upcoming)])
+
+    def stay_on(day: dt.date) -> StayLike | None:
+        return next((s for s in upcoming if s.start_date <= day <= s.end_date), None)
+
     future_income = Decimal(0)
+    balance_at_target = balance
+    lowest, lowest_date, runs_out_on = balance, as_of, None
     day = as_of + dt.timedelta(days=1)
-    while day <= goal.target_date:
+    while day <= horizon_end:
+        stay = stay_on(day)
+        spend = stay.monthly_budget / DAYS_PER_MONTH if stay else daily_rate
         day_income = net_by_day.get(day, Decimal(0))
-        future_income += day_income
-        balance += day_income - daily_rate
-        points.append(ForecastPoint(day, balance.quantize(CENT), projected=True))
+        balance += day_income - spend - upfront_by_day.get(day, Decimal(0))
+        points.append(ForecastPoint(day, balance.quantize(CENT), projected=True,
+                                    city=stay.city if stay else city))
+        if day <= goal.target_date:
+            future_income += day_income
+            balance_at_target = balance
+        if balance < lowest:
+            lowest, lowest_date = balance, day
+        if runs_out_on is None and balance < 0:
+            runs_out_on = day
         day += dt.timedelta(days=1)
 
-    projected = balance.quantize(CENT)
+    projected = balance_at_target.quantize(CENT)
     gap = projected - goal.target_amount
 
     days_left = (goal.target_date - as_of).days
@@ -212,5 +269,14 @@ def forecast_goal(
         monthly_cut_needed=monthly_cut,
         suggested_cuts=cuts,
         cuts_close_gap=cuts_close_gap,
+        stays=[
+            StayWindow(s.label, s.city, s.start_date, s.end_date, s.monthly_budget, s.upfront_cost)
+            for s in upcoming
+        ],
+        horizon_end=horizon_end,
+        projected_end_balance=balance.quantize(CENT),
+        lowest_balance=lowest.quantize(CENT),
+        lowest_balance_date=lowest_date,
+        runs_out_on=runs_out_on,
         points=points,
     )

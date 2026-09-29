@@ -10,6 +10,18 @@ class ForecastPointRead(BaseModel):
     date: dt.date
     balance: Decimal
     projected: bool
+    city: str | None
+
+
+class StayWindowRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    label: str
+    city: str
+    start_date: dt.date
+    end_date: dt.date
+    monthly_budget: Decimal
+    upfront_cost: Decimal
 
 
 class ForecastRead(BaseModel):
@@ -31,4 +43,10 @@ class ForecastRead(BaseModel):
     monthly_cut_needed: Decimal
     suggested_cuts: dict[str, Decimal]
     cuts_close_gap: bool
+    stays: list[StayWindowRead]
+    horizon_end: dt.date
+    projected_end_balance: Decimal
+    lowest_balance: Decimal
+    lowest_balance_date: dt.date
+    runs_out_on: dt.date | None
     points: list[ForecastPointRead]

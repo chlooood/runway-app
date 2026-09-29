@@ -34,6 +34,16 @@ class Goal:
     target_date: dt.date
 
 
+@dataclass
+class Stay:
+    city: str
+    start_date: dt.date
+    end_date: dt.date
+    monthly_budget: D
+    upfront_cost: D = D("0")
+    label: str = "Exchange"
+
+
 def day(month: int, d: int, year: int = 2026) -> dt.date:
     return dt.date(year, month, d)
 
@@ -175,6 +185,50 @@ def test_cuts_are_capped_at_flexible_spend_and_flagged_when_not_enough():
     assert result.monthly_cut_needed == D("708.33")
     assert result.suggested_cuts == {"dining": D("300.00"), "misc": D("100.00")}
     assert result.cuts_close_gap is False
+
+
+def test_goal_is_judged_at_its_date_while_the_projection_continues_through_a_stay():
+    income = [Income(day(1, 5), D("10000"))]
+    expenses = [Expense(day(1, 10), D("300"), "Vancouver")]  # home: $300/month
+    goal = Goal(D("5000"), day(1, 31, 2027))  # 365 days after as_of
+    lyon = Stay("Lyon", day(2, 1, 2027), day(1, 31, 2028), D("400"), upfront_cost=D("500"))  # 365 days
+
+    result = forecast_goal(goal, income, expenses, as_of=day(1, 31), stays=[lyon])
+    by_date = {p.date: p for p in result.points}
+
+    assert result.projected_balance == D("6100.00")  # 9700 - 12 * 300, at the goal date
+    assert result.on_track is True
+    assert result.horizon_end == day(1, 31, 2028)
+    # first Lyon day: upfront $500 plus one day at $400/month (13.15)
+    assert by_date[day(2, 1, 2027)].balance == D("5586.85")
+    assert by_date[day(1, 31, 2027)].city == "Vancouver"
+    assert by_date[day(2, 1, 2027)].city == "Lyon"
+    assert result.projected_end_balance == D("800.00")  # 6100 - 500 - 12 * 400
+    assert result.lowest_balance == D("800.00") and result.lowest_balance_date == day(1, 31, 2028)
+    assert result.runs_out_on is None
+
+
+def test_runs_out_on_is_the_first_projected_day_below_zero():
+    income = [Income(day(1, 5), D("3000"))]
+    expenses = [Expense(day(1, 10), D("300"), "Vancouver")]  # $2,700 now, ~$9.86/day
+    result = forecast_goal(Goal(D("1"), day(1, 31, 2027)), income, expenses, as_of=day(1, 31))
+
+    assert result.runs_out_on == day(11, 1)  # 2700 / (3600/365) = 273.75 days -> day 274
+    assert result.lowest_balance == D("-900.00")
+    assert result.lowest_balance_date == day(1, 31, 2027)
+
+
+def test_stay_already_underway_skips_its_upfront_cost_and_finished_stays_are_ignored():
+    income = [Income(day(1, 1), D("1000"))]
+    expenses = [Expense(day(1, 10), D("300"), "Vancouver")]
+    stays = [
+        Stay("Lyon", day(1, 1), day(2, 28), D("365"), upfront_cost=D("999")),  # started already
+        Stay("Paris", day(12, 1, 2025), day(12, 31, 2025), D("5000")),  # finished
+    ]
+    result = forecast_goal(Goal(D("1"), day(2, 28)), income, expenses, as_of=day(1, 31), stays=stays)
+
+    assert result.projected_balance == D("364.00")  # 700 - 28 days * $12/day, no upfront
+    assert [s.city for s in result.stays] == ["Lyon"]
 
 
 def test_no_cuts_suggested_when_on_track():

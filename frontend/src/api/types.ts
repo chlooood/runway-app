@@ -34,6 +34,16 @@ export interface ApiForecastPoint {
   date: string
   balance: string
   projected: boolean
+  city: City | null // projected points: whose cost baseline applied that day
+}
+
+export interface ApiStayWindow {
+  label: string
+  city: City
+  start_date: string
+  end_date: string
+  monthly_budget: string
+  upfront_cost: string
 }
 
 export interface ApiForecast {
@@ -53,6 +63,12 @@ export interface ApiForecast {
   monthly_cut_needed: string
   suggested_cuts: Record<string, string>
   cuts_close_gap: boolean
+  stays: ApiStayWindow[]
+  horizon_end: string
+  projected_end_balance: string
+  lowest_balance: string
+  lowest_balance_date: string
+  runs_out_on: string | null
   points: ApiForecastPoint[]
 }
 
@@ -84,6 +100,16 @@ export interface ForecastPoint {
   date: string
   balance: number
   projected: boolean
+  city: City | null
+}
+
+export interface StayWindow {
+  label: string
+  city: City
+  startDate: string
+  endDate: string
+  monthlyBudget: number
+  upfrontCost: number
 }
 
 export interface Forecast {
@@ -103,5 +129,11 @@ export interface Forecast {
   monthlyCutNeeded: number
   suggestedCuts: Record<string, number>
   cutsCloseGap: boolean
+  stays: StayWindow[] // planned stays (e.g. the exchange), projected on their own budgets
+  horizonEnd: string
+  projectedEndBalance: number
+  lowestBalance: number
+  lowestBalanceDate: string
+  runsOutOn: string | null
   points: ForecastPoint[]
 }

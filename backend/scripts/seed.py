@@ -8,11 +8,12 @@ discretionary categories. The student starts May with some savings.
 
 Generation is deterministic: the same --seed and --as-of always produce the
 same rows. Expenses are only generated up to --as-of (they are "actuals");
-the only future-dated rows are known scheduled income (GST/HST credits).
+the only future-dated rows are known scheduled income (GST/HST credits) and the
+planned Lyon exchange stay (Jan-Apr 2027), whose costs are budgeted estimates.
 
 Usage, from backend/:
     python -m scripts.seed               # refuses if the tables already have data
-    python -m scripts.seed --reset       # wipes income_events, expenses, goals first
+    python -m scripts.seed --reset       # wipes income_events, expenses, goals, planned_stays first
     python -m scripts.seed --as-of 2026-09-28 --seed 7
 """
 
@@ -25,7 +26,7 @@ from faker import Faker
 from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
-from app.models import Expense, Goal, IncomeEvent
+from app.models import Expense, Goal, IncomeEvent, PlannedStay
 
 DATA_START = dt.date(2026, 5, 1)
 
@@ -42,6 +43,19 @@ GST_CREDIT = Decimal("130.25")
 GST_CREDIT_DATES = [dt.date(2026, 7, 3), dt.date(2026, 10, 5), dt.date(2027, 1, 5)]
 
 GOAL = {"name": "Exchange fund", "target_amount": Decimal("5000.00"), "target_date": dt.date(2027, 1, 4)}
+
+# Exchange term in Lyon. Synthetic estimates in EUR, converted at an assumed 1.5 CAD/EUR:
+# studio rent 480, groceries 220, TCL student pass 25, phone 10, going out + travel 250
+# = EUR 985/month ≈ CAD 1,480. Upfront: return flight YVR-LYS ≈ CAD 1,400 + one month's
+# rent as deposit ≈ CAD 720.
+LYON_STAY = {
+    "label": "Lyon exchange",
+    "city": "Lyon",
+    "start_date": dt.date(2027, 1, 5),
+    "end_date": dt.date(2027, 4, 30),
+    "monthly_budget": Decimal("1480.00"),
+    "upfront_cost": Decimal("2120.00"),
+}
 
 # Monthly spending baseline per city, by category. No rent, groceries, or phone:
 # those are covered. Toronto has a monthly TTC pass; Vancouver has a U-Pass.
@@ -66,7 +80,9 @@ def _money(value: float) -> Decimal:
     return Decimal(str(round(value, 2)))
 
 
-def build_seed_data(as_of: dt.date, seed: int) -> tuple[list[IncomeEvent], list[Expense], list[Goal]]:
+def build_seed_data(
+    as_of: dt.date, seed: int
+) -> tuple[list[IncomeEvent], list[Expense], list[Goal], list[PlannedStay]]:
     """Build (but do not save) the demo rows. Pure apart from the seeded RNG."""
     fake = Faker("en_CA")
     fake.seed_instance(seed)
@@ -101,7 +117,8 @@ def build_seed_data(as_of: dt.date, seed: int) -> tuple[list[IncomeEvent], list[
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
     goals = [Goal(**GOAL)]
-    return income, expenses, goals
+    stays = [PlannedStay(**LYON_STAY)]
+    return income, expenses, goals, stays
 
 
 def main() -> None:
@@ -112,24 +129,24 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42, help="RNG seed (default: 42)")
     args = parser.parse_args()
 
-    income, expenses, goals = build_seed_data(args.as_of, args.seed)
+    income, expenses, goals, stays = build_seed_data(args.as_of, args.seed)
     # Totals are read before commit, which expires the ORM objects.
     earned = sum(e.amount for e in income if e.date <= args.as_of)
     spent = sum(e.amount for e in expenses)
-    counts = (len(income), len(expenses), len(goals))
+    counts = (len(income), len(expenses), len(goals), len(stays))
 
     with SessionLocal() as db:
-        tables = (IncomeEvent, Expense, Goal)
+        tables = (IncomeEvent, Expense, Goal, PlannedStay)
         existing = sum(db.scalar(select(func.count()).select_from(t)) for t in tables)
         if existing and not args.reset:
             raise SystemExit(f"Database already has {existing} rows; rerun with --reset to replace them.")
         for table in tables:
             db.execute(delete(table))
-        db.add_all([*income, *expenses, *goals])
+        db.add_all([*income, *expenses, *goals, *stays])
         db.commit()
 
-    print(f"Seeded {counts[0]} income events, {counts[1]} expenses, {counts[2]} goal(s) "
-          f"(as of {args.as_of}, seed {args.seed}).")
+    print(f"Seeded {counts[0]} income events, {counts[1]} expenses, {counts[2]} goal(s), "
+          f"{counts[3]} planned stay(s) (as of {args.as_of}, seed {args.seed}).")
     print(f"Balance to date: ${earned - spent:,.2f} (earned ${earned:,.2f}, spent ${spent:,.2f})")
 
 
