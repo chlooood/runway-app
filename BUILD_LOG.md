@@ -14,3 +14,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** separate `Read` schemas rather than returning ORM objects directly — the alternative couples the API contract to the table layout, so any new column would silently leak into responses.
 - **Verified:** smoke test of all 3 resources (201/200/204/404/422 paths) against Postgres; 33/33 checks pass, and no rows are left behind. Money serializes as JSON strings (e.g. `"9000.00"`) to keep decimal precision.
 
+## 2026-09-28 — Synthetic seed script
+- **Built:** `backend/scripts/seed.py` (`python -m scripts.seed [--reset] [--as-of] [--seed]`): Toronto co-op May–Aug (biweekly $2,300 net, Faker employer name), no work income from Sept, quarterly GST/HST credits (incl. future Oct/Jan), city-tagged expenses (Toronto ≈ $2,360/mo, Vancouver ≈ $1,955/mo), "Exchange fund" goal $5,000 by 2027-01-04.
+- **Concepts:** Reproducibility (seeded Faker, explicit `--as-of`), Idempotency (`--reset` in one transaction; refuses to overwrite without it), Separation of Concerns (pure `build_seed_data` vs DB-writing `main`).
+- **Why:** seeded, date-pinned generation rather than plain `random` + `date.today()` — the alternative gives different data every run, so forecast numbers and screenshots can't be reproduced or compared.
+- **Verified:** same seed produces identical rows, different seed differs, no future-dated expenses; balance to date $9,427.02.
+
