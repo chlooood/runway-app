@@ -56,3 +56,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** fixed the slow load by changing the API host rather than adding a loading spinner or caching — the timing showed the API was already fast and the 2 s was an IPv6→IPv4 fallback on every request, so anything else would have hidden the cause.
 - **Verified:** `tsc -b` + `oxlint` clean; browser: Lyon band, departure tooltip, end-of-exchange line; temporarily set goal $15k + Lyon $5k/mo to confirm short badge, capped cuts + warning, and "run out around Mar 16 in Lyon", then restored; API calls now 13–26 ms.
 
+## 2026-09-29 — Goal = cost of Lyon
+- **Built:** `scripts/seed.py` derives the goal target from the Lyon stay (`stay_cost`: upfront + monthly budget prorated over its 116 days, same `DAYS_PER_MONTH` as the forecast) → $7,764.28 by Jan 4, replacing the $5,000 placeholder.
+- **Concepts:** Single Source of Truth (target computed from the stay constants, not typed separately).
+- **Why:** deriving the target instead of hardcoding ~$7,764 — a hardcoded number silently goes stale the moment the Lyon budget changes.
+- **Verified:** 15/15 pytest; forecast gap at Jan 4 ($5,812.10) + Jan GST credit ($130.25) = end-of-Lyon balance ($5,942.36) within 1¢, so goal and projection agree.
+

@@ -20,13 +20,14 @@ Usage, from backend/:
 import argparse
 import datetime as dt
 from calendar import monthrange
-from decimal import Decimal
+from decimal import ROUND_UP, Decimal
 
 from faker import Faker
 from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
 from app.models import Expense, Goal, IncomeEvent, PlannedStay
+from app.services.forecast import DAYS_PER_MONTH
 
 DATA_START = dt.date(2026, 5, 1)
 
@@ -42,8 +43,6 @@ COOP_NET_PAY = Decimal("1700.00")  # per biweekly paycheck, after tax
 GST_CREDIT = Decimal("130.25")
 GST_CREDIT_DATES = [dt.date(2026, 7, 3), dt.date(2026, 10, 5), dt.date(2027, 1, 5)]
 
-GOAL = {"name": "Exchange fund", "target_amount": Decimal("5000.00"), "target_date": dt.date(2027, 1, 4)}
-
 # Exchange term in Lyon. Synthetic estimates in EUR, converted at an assumed 1.5 CAD/EUR:
 # studio rent 480, groceries 220, TCL student pass 25, phone 10, going out + travel 250
 # = EUR 985/month ≈ CAD 1,480. Upfront: return flight YVR-LYS ≈ CAD 1,400 + one month's
@@ -56,6 +55,17 @@ LYON_STAY = {
     "monthly_budget": Decimal("1480.00"),
     "upfront_cost": Decimal("2120.00"),
 }
+
+
+def stay_cost(stay: dict) -> Decimal:
+    """Upfront cost + monthly budget over the stay's days, prorated the same way the forecast does."""
+    days = (stay["end_date"] - stay["start_date"]).days + 1
+    prorated = stay["monthly_budget"] * days / DAYS_PER_MONTH
+    return (stay["upfront_cost"] + prorated).quantize(Decimal("0.01"), rounding=ROUND_UP)
+
+
+# The goal is "have enough for all of Lyon by the day before leaving" (≈ $7,764).
+GOAL = {"name": "Exchange fund", "target_amount": stay_cost(LYON_STAY), "target_date": dt.date(2027, 1, 4)}
 
 # Monthly spending baseline per city, by category. No rent, groceries, or phone:
 # those are covered. Toronto has a monthly TTC pass; Vancouver has a U-Pass.
