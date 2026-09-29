@@ -102,6 +102,18 @@
   color: var(--short);
 }
 
+.goal-card__outlook {
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--stay);
+  color: var(--text);
+}
+
+.goal-card__outlook.is-short {
+  background: var(--short-bg);
+  color: var(--short);
+}
+
 .goal-card__meta {
   font-size: 0.9rem;
   color: var(--muted);

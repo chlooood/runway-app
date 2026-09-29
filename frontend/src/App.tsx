@@ -42,6 +42,7 @@ function App() {
             city={data.forecast.city}
             rates={data.forecast.categoryMonthlyRates}
             cuts={data.forecast.suggestedCuts}
+            stays={data.forecast.stays}
           />
         </div>
       )}

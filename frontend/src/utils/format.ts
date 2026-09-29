@@ -18,6 +18,10 @@ const parseDate = (iso: string): Date => {
 export const formatDate = (iso: string): string =>
   parseDate(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
 
+/** "Jan 5" — when the year is obvious from context. */
+export const formatShortDate = (iso: string): string =>
+  parseDate(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+
 /** "Jan" — for chart axis ticks. */
 export const formatMonth = (iso: string): string =>
   parseDate(iso).toLocaleDateString('en-CA', { month: 'short' })

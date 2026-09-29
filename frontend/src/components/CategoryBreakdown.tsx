@@ -1,3 +1,4 @@
+import type { StayWindow } from '../api/types'
 import { capitalize, formatMoney } from '../utils/format'
 import './CategoryBreakdown.css'
 
@@ -7,9 +8,11 @@ interface CategoryBreakdownProps {
   rates: Record<string, number>
   /** Suggested monthly cut per category, if the goal is off pace. */
   cuts: Record<string, number>
+  /** Planned stays: budgeted, so shown as a note rather than as bars. */
+  stays: StayWindow[]
 }
 
-export function CategoryBreakdown({ city, rates, cuts }: CategoryBreakdownProps) {
+export function CategoryBreakdown({ city, rates, cuts, stays }: CategoryBreakdownProps) {
   const rows = Object.entries(rates)
   const max = Math.max(...rows.map(([, amount]) => amount), 1)
 
@@ -38,6 +41,12 @@ export function CategoryBreakdown({ city, rates, cuts }: CategoryBreakdownProps)
           ))}
         </ul>
       )}
+
+      {stays.map((s) => (
+        <p key={`${s.city}-${s.startDate}`} className="breakdown__stay">
+          {s.city} budget: <strong>{formatMoney(s.monthlyBudget)}/mo</strong> (planned)
+        </p>
+      ))}
     </section>
   )
 }

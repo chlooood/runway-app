@@ -46,6 +46,45 @@
   border-color: var(--goal);
 }
 
+.cash-flow__legend .is-stay::before {
+  height: 10px;
+  border: none;
+  border-radius: 3px;
+  background: var(--stay);
+}
+
+.cash-flow__tooltip {
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+}
+
+.cash-flow__tooltip-date {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.cash-flow__tooltip .is-actual {
+  color: var(--actual);
+}
+
+.cash-flow__tooltip .is-projected,
+.cash-flow__tooltip .is-cost {
+  color: var(--projected);
+}
+
+.cash-flow__tooltip .is-cost {
+  font-weight: 700;
+}
+
+.cash-flow__tooltip-stay {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .cash-flow__chart {
   margin-left: -8px;
 }

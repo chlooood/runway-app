@@ -55,6 +55,15 @@
   color: var(--short);
 }
 
+.breakdown__stay {
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--stay);
+  color: var(--stay-text);
+  font-size: 0.9rem;
+}
+
 .breakdown__empty {
   color: var(--muted);
 }

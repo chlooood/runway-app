@@ -12,6 +12,8 @@
   --good-bg: #e8f4ea;
   --short: #d0694f;
   --short-bg: #fcebe5;
+  --stay: #efe7f7; /* lavender band: exchange term */
+  --stay-text: #7b5ea7;
 
   --radius: 18px;
   --shadow: 0 2px 10px rgba(92, 64, 51, 0.08);

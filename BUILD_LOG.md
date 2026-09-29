@@ -50,3 +50,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** a `planned_stays` table instead of fake future expenses for Lyon — future expenses would be mixed into "actuals", skew historical averages, and be ignored by the forecast anyway.
 - **Verified:** 15/15 pytest; `alembic check` clean + downgrade/upgrade round trip; CRUD smoke (201/422/422/200/204/404); seeded forecast ends Apr 30 at $5,942.36 (Vancouver) / $5,367.95 (Toronto), never below $0.
 
+## 2026-09-29 — Lyon in the UI; API latency fix
+- **Built:** `CashFlowChart` shades each planned stay (`ReferenceArea`), marks departure with a `ReferenceDot`, and uses a custom typed tooltip ("Flights + deposit −$2,120", stay budget); `GoalProgressCard` adds a `StayOutlook` line (end-of-exchange balance, or "you'd run out around …" in coral); `CategoryBreakdown` notes the planned Lyon budget. Frontend now calls the API at `127.0.0.1` (`.env.example` documents why).
+- **Concepts:** Component Composition (`StayOutlook` sub-component), Measure Before Optimizing (timed `localhost` vs `127.0.0.1`: 2,167 ms vs 48 ms).
+- **Why:** fixed the slow load by changing the API host rather than adding a loading spinner or caching — the timing showed the API was already fast and the 2 s was an IPv6→IPv4 fallback on every request, so anything else would have hidden the cause.
+- **Verified:** `tsc -b` + `oxlint` clean; browser: Lyon band, departure tooltip, end-of-exchange line; temporarily set goal $15k + Lyon $5k/mo to confirm short badge, capped cuts + warning, and "run out around Mar 16 in Lyon", then restored; API calls now 13–26 ms.
+
