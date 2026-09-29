@@ -6,7 +6,12 @@ from decimal import Decimal as D
 
 import pytest
 
-from app.services.forecast import UnknownCityError, forecast_goal, monthly_spend_by_city
+from app.services.forecast import (
+    UnknownCityError,
+    forecast_goal,
+    monthly_spend_by_category,
+    monthly_spend_by_city,
+)
 
 
 @dataclass
@@ -20,6 +25,7 @@ class Expense:
     date: dt.date
     amount: D
     city: str
+    category: str = "misc"
 
 
 @dataclass
@@ -126,3 +132,57 @@ def test_future_dated_expenses_are_ignored():
 
     assert result.current_balance == D("700.00")
     assert result.monthly_spend_rate == D("300.00")
+
+
+def test_category_rates_use_the_citys_month_count_so_they_sum_to_the_city_rate():
+    expenses = [
+        Expense(day(1, 1), D("100"), "Vancouver", "transit"),
+        Expense(day(1, 20), D("300"), "Vancouver", "dining"),
+        Expense(day(2, 1), D("100"), "Vancouver", "transit"),
+        Expense(day(2, 9), D("50"), "Toronto", "dining"),  # other city: excluded
+    ]
+    rates = monthly_spend_by_category(expenses, "Vancouver")
+
+    # dining only happened in January but is averaged over both Vancouver months
+    assert rates == {"dining": D("150.00"), "transit": D("100.00")}
+    assert list(rates) == ["dining", "transit"]  # largest first
+    assert sum(rates.values()) == monthly_spend_by_city(expenses)["Vancouver"]
+
+
+def _short_scenario(target: str):
+    """$2,500 now, $500/month spend ($100 fixed transit, $400 flexible), 12 months to go."""
+    income = [Income(day(1, 5), D("3000"))]
+    expenses = [
+        Expense(day(1, 1), D("100"), "Vancouver", "transit"),
+        Expense(day(1, 10), D("300"), "Vancouver", "dining"),
+        Expense(day(1, 20), D("100"), "Vancouver", "misc"),
+    ]
+    return forecast_goal(Goal(D(target), day(1, 31, 2027)), income, expenses, as_of=day(1, 31))
+
+
+def test_shortfall_is_spread_per_month_and_split_across_flexible_categories_only():
+    result = _short_scenario("1000")  # projected -3500, so $4,500 short over 12 months
+
+    assert result.monthly_cut_needed == D("375.00")
+    assert result.suggested_cuts == {"dining": D("281.25"), "misc": D("93.75")}  # 3:1, like spend
+    assert "transit" not in result.suggested_cuts
+    assert result.cuts_close_gap is True
+
+
+def test_cuts_are_capped_at_flexible_spend_and_flagged_when_not_enough():
+    result = _short_scenario("5000")  # $8,500 short: $708.33/month, but only $400 is flexible
+
+    assert result.monthly_cut_needed == D("708.33")
+    assert result.suggested_cuts == {"dining": D("300.00"), "misc": D("100.00")}
+    assert result.cuts_close_gap is False
+
+
+def test_no_cuts_suggested_when_on_track():
+    income = [Income(day(1, 5), D("3000"))]
+    expenses = [Expense(day(1, 10), D("300"), "Vancouver", "dining")]
+    result = forecast_goal(Goal(D("100"), day(3, 31)), income, expenses, as_of=day(1, 31))
+
+    assert result.on_track is True
+    assert result.monthly_cut_needed == D("0")
+    assert result.suggested_cuts == {}
+    assert result.cuts_close_gap is True

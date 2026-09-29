@@ -21,10 +21,14 @@ class ForecastRead(BaseModel):
     current_balance: Decimal
     monthly_spend_rate: Decimal
     city_monthly_rates: dict[str, Decimal]
+    category_monthly_rates: dict[str, Decimal]
     known_future_income: Decimal
     projected_balance: Decimal
     target_amount: Decimal
     target_date: dt.date
     gap: Decimal
     on_track: bool
+    monthly_cut_needed: Decimal
+    suggested_cuts: dict[str, Decimal]
+    cuts_close_gap: bool
     points: list[ForecastPointRead]

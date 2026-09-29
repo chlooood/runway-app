@@ -32,3 +32,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** convert money strings to numbers once in the client instead of in each component — the alternative scatters `Number(...)` calls through the UI, and one missed call quietly turns `+` into string concatenation.
 - **Verified:** preflight from `localhost:5173` → 200, other origin → 400; `tsc -b` and `oxlint` clean; 8/8 pytest still pass; Alembic still resolves config.
 
+## 2026-09-29 — Per-category breakdown + suggested cuts; seed scenario update
+- **Built:** `services/forecast.py` adds `monthly_spend_by_category` and `suggest_cuts` (shortfall ÷ months left, split across flexible categories in proportion to spend; fixed categories like transit never cut; flags when cutting all flexible spend still isn't enough). Forecast response gains `category_monthly_rates`, `monthly_cut_needed`, `suggested_cuts`, `cuts_close_gap`; frontend types/adapter updated. Seed: $2,000 starting savings, $1,700 biweekly pay, no rent/groceries/phone.
+- **Concepts:** Single Responsibility (`suggest_cuts` is its own tested function), Testability (4 new cases, 12 total).
+- **Why:** compute cuts in the backend service instead of the React component — the alternative puts business rules where pytest can't reach them and would need re-implementing for any other client.
+- **Verified:** 12/12 pytest pass; `tsc -b` clean. Seeded forecast: $13,576.38 projected vs $5,000 (on track, no cuts); Toronto toggle $13,001.97.
+

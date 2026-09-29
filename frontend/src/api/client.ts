@@ -32,21 +32,26 @@ const toGoal = (g: ApiGoal): Goal => ({
   targetDate: g.target_date,
 })
 
+const moneyMap = (m: Record<string, string>): Record<string, number> =>
+  Object.fromEntries(Object.entries(m).map(([key, value]) => [key, money(value)]))
+
 const toForecast = (f: ApiForecast): Forecast => ({
   goalId: f.goal_id,
   asOf: f.as_of,
   city: f.city,
   currentBalance: money(f.current_balance),
   monthlySpendRate: money(f.monthly_spend_rate),
-  cityMonthlyRates: Object.fromEntries(
-    Object.entries(f.city_monthly_rates).map(([city, rate]) => [city, money(rate)]),
-  ),
+  cityMonthlyRates: moneyMap(f.city_monthly_rates),
+  categoryMonthlyRates: moneyMap(f.category_monthly_rates),
   knownFutureIncome: money(f.known_future_income),
   projectedBalance: money(f.projected_balance),
   targetAmount: money(f.target_amount),
   targetDate: f.target_date,
   gap: money(f.gap),
   onTrack: f.on_track,
+  monthlyCutNeeded: money(f.monthly_cut_needed),
+  suggestedCuts: moneyMap(f.suggested_cuts),
+  cutsCloseGap: f.cuts_close_gap,
   points: f.points.map((p) => ({ ...p, balance: money(p.balance) })),
 })
 

@@ -43,12 +43,16 @@ export interface ApiForecast {
   current_balance: string
   monthly_spend_rate: string
   city_monthly_rates: Record<City, string>
+  category_monthly_rates: Record<string, string>
   known_future_income: string
   projected_balance: string
   target_amount: string
   target_date: string
   gap: string
   on_track: boolean
+  monthly_cut_needed: string
+  suggested_cuts: Record<string, string>
+  cuts_close_gap: boolean
   points: ApiForecastPoint[]
 }
 
@@ -89,11 +93,15 @@ export interface Forecast {
   currentBalance: number
   monthlySpendRate: number
   cityMonthlyRates: Record<City, number>
+  categoryMonthlyRates: Record<string, number> // selected city, largest first
   knownFutureIncome: number
   projectedBalance: number
   targetAmount: number
   targetDate: string
   gap: number
   onTrack: boolean
+  monthlyCutNeeded: number
+  suggestedCuts: Record<string, number>
+  cutsCloseGap: boolean
   points: ForecastPoint[]
 }
