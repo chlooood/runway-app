@@ -7,3 +7,4 @@ python-dotenv
 pydantic
 faker
 pytest
+httpx2

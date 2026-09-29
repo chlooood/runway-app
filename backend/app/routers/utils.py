@@ -1,0 +1,19 @@
+from typing import TypeVar
+
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.database import Base
+
+ModelT = TypeVar("ModelT", bound=Base)
+
+
+def get_or_404(db: Session, model: type[ModelT], obj_id: int) -> ModelT:
+    """Fetch a row by primary key, or raise a 404 naming the resource."""
+    obj = db.get(model, obj_id)
+    if obj is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{model.__name__} {obj_id} not found",
+        )
+    return obj

@@ -2,6 +2,10 @@
 
 from fastapi import FastAPI
 
+from app.routers import expenses, goals, income_events
+
 app = FastAPI(title="Runway")
 
-# Routers are registered here as they are built (income_events, expenses, goals).
+app.include_router(income_events.router)
+app.include_router(expenses.router)
+app.include_router(goals.router)
