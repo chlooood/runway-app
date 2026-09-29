@@ -3,5 +3,6 @@
 from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.income_event import IncomeEvent
+from app.models.planned_stay import PlannedStay
 
-__all__ = ["Expense", "Goal", "IncomeEvent"]
+__all__ = ["Expense", "Goal", "IncomeEvent", "PlannedStay"]

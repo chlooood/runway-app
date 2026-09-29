@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
-from app.routers import expenses, forecast, goals, income_events
+from app.routers import expenses, forecast, goals, income_events, planned_stays
 
 app = FastAPI(title="Runway")
 
@@ -18,4 +18,5 @@ app.add_middleware(
 app.include_router(income_events.router)
 app.include_router(expenses.router)
 app.include_router(goals.router)
+app.include_router(planned_stays.router)
 app.include_router(forecast.router)
