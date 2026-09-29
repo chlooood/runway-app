@@ -13,7 +13,7 @@ planned Lyon exchange stay (Jan-Apr 2027), whose costs are budgeted estimates.
 
 Usage, from backend/:
     python -m scripts.seed               # refuses if the tables already have data
-    python -m scripts.seed --reset       # wipes income_events, expenses, goals, planned_stays first
+    python -m scripts.seed --reset       # wipes all rows (and users) first, then seeds one demo user
     python -m scripts.seed --as-of 2026-09-28 --seed 7
 """
 
@@ -26,7 +26,7 @@ from faker import Faker
 from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
-from app.models import Expense, Goal, IncomeEvent, PlannedStay
+from app.models import Expense, Goal, IncomeEvent, PlannedStay, User
 from app.services.forecast import DAYS_PER_MONTH
 
 DATA_START = dt.date(2026, 5, 1)
@@ -146,13 +146,20 @@ def main() -> None:
     counts = (len(income), len(expenses), len(goals), len(stays))
 
     with SessionLocal() as db:
-        tables = (IncomeEvent, Expense, Goal, PlannedStay)
-        existing = sum(db.scalar(select(func.count()).select_from(t)) for t in tables)
+        owned = (IncomeEvent, Expense, Goal, PlannedStay)
+        existing = sum(db.scalar(select(func.count()).select_from(t)) for t in owned)
         if existing and not args.reset:
             raise SystemExit(f"Database already has {existing} rows; rerun with --reset to replace them.")
-        for table in tables:
+        for table in (*owned, User):  # children first, then their owner
             db.execute(delete(table))
-        db.add_all([*income, *expenses, *goals, *stays])
+
+        user = User(name="Demo student")
+        db.add(user)
+        db.flush()  # assigns user.id
+        rows = [*income, *expenses, *goals, *stays]
+        for row in rows:
+            row.user_id = user.id
+        db.add_all(rows)
         db.commit()
 
     print(f"Seeded {counts[0]} income events, {counts[1]} expenses, {counts[2]} goal(s), "
