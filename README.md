@@ -1,10 +1,8 @@
 # Runway
 
-[![CI](https://github.com/chlooood/runway-app/actions/workflows/ci.yml/badge.svg)](https://github.com/chlooood/runway-app/actions/workflows/ci.yml)
-
 A savings and cash-flow forecaster for students with irregular income: co-op terms that pay, school terms that don't, and a move between cities along the way. It answers one question: **will I have enough saved by the time I leave for exchange, and will it last?**
 
-**Stack:** FastAPI · SQLAlchemy 2 · Alembic · PostgreSQL · React · TypeScript · Recharts · GitHub Actions
+**Stack:** FastAPI · SQLAlchemy 2 · Alembic · PostgreSQL · React · TypeScript · Recharts
 
 ## The demo scenario
 
@@ -34,8 +32,6 @@ With the seeded data, Runway shows:
 - **Ownership checks.** Every route is scoped to the current user through a FastAPI dependency. Another user's rows return the same 404 as missing ones, so ids can't be probed. With no login yet, there's a single demo user, and the dependency is where real authentication would plug in.
 - **Typed frontend.** TypeScript runs in `strict` mode with no `any`. The backend sends money as decimal strings so it never loses precision, and one adapter layer converts them to numbers before any component sees them. Fetching lives in a hook that ignores stale responses, so quickly switching cities can't show the wrong city's data.
 - **Measured before optimizing.** The page loaded slowly, and timing the requests traced it to Windows resolving `localhost` to IPv6 first. That added about 2 s per request against an API answering in under 50 ms. The fix was a config change, not caching.
-- **CI.** [GitHub Actions](.github/workflows/ci.yml) applies every migration to a fresh Postgres, runs `alembic check` to confirm the models and migrations agree, runs the tests, and lints, type-checks and builds the frontend on every push.
-
 The reasoning behind each step is logged in [`BUILD_LOG.md`](BUILD_LOG.md).
 
 ## How the forecast works
@@ -117,7 +113,6 @@ frontend/
     api/            Typed API client; converts wire format (money as strings) to app types
     components/     CityToggle, GoalProgressCard, CashFlowChart, CategoryBreakdown
     hooks/          useRunwayData (fetching, loading/error state)
-.github/workflows/  CI
 docker-compose.yml  Local Postgres
 BUILD_LOG.md        Step-by-step engineering log
 ```
