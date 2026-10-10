@@ -43,37 +43,58 @@ FastAPI · SQLAlchemy · Alembic · PostgreSQL · React · TypeScript · Rechart
 
 ## Running it locally
 
-You'll need Docker, Python 3.11+ and Node 20.19+ (or 22.12+).
+You'll need [Docker Desktop](https://www.docker.com/products/docker-desktop/), Python 3.11+ and Node 20.19+ (or 22.12+). It takes **two terminal windows**: one for the backend and one for the frontend. Every step starts from the `runway-app` folder.
 
-**1. Start the database**
+**1. Start the database.** Open Docker Desktop and wait until it says it's running, then:
 
-```bash
+```
 docker compose up -d --wait
 ```
 
-**2. Backend** (from `backend/`)
+**2. Start the backend** (first terminal; leave it running)
 
-```bash
+Windows (Command Prompt or PowerShell):
+
+```
+cd backend
 python -m venv venv
-venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
+venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env           # Windows: copy .env.example .env
+copy .env.example .env
 alembic upgrade head
 python -m scripts.seed
 uvicorn app.main:app --port 8000
 ```
 
-**3. Frontend** (from `frontend/`)
+macOS / Linux:
 
-```bash
+```
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+python -m scripts.seed
+uvicorn app.main:app --port 8000
+```
+
+**3. Start the frontend** (second terminal; leave it running)
+
+```
+cd frontend
 npm install
-cp .env.example .env           # Windows: copy .env.example .env
+copy .env.example .env
 npm run dev
 ```
 
-Then open http://localhost:5173. The API docs are at http://127.0.0.1:8000/docs.
+On macOS / Linux, use `cp` instead of `copy`.
 
-To run the tests, use `python -m pytest` from `backend/`. To start the demo data over, use `python -m scripts.seed --reset`.
+**4. Open http://localhost:5173.** The API docs are at http://127.0.0.1:8000/docs.
+
+**Next time,** you only need to: start Docker Desktop and run `docker compose up -d`. Then, in `backend`, activate the venv and run `uvicorn app.main:app --port 8000`. In `frontend`, run `npm run dev`.
+
+To run the tests, use `python -m pytest` in `backend` (with the venv active). To start the demo data over, use `python -m scripts.seed --reset`.
 
 <details>
 <summary>Project structure and API</summary>
