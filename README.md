@@ -12,7 +12,7 @@ So Runway is built around my own situation. The numbers in it are synthetic, gen
 
 ## What it shows
 
-With the demo data, I'm projected to have **$13,576** by the day I leave, against a **$7,764** goal. That goal isn't a guess: it's calculated from the Lyon budget (flights, deposit and living costs). I should finish the exchange with about **$5,942** left.
+With the demo data, I'm projected to have **$13,576** by the day I leave, against a **$7,764** goal. I set that goal by adding up the Lyon budget (flights, deposit and living costs). I should finish the exchange with about **$5,942** left.
 
 - **Goal card:** where I'll be on departure day, compared with what Lyon will cost, plus an "on track" or "short" badge.
 - **Cash flow chart:** my real balance so far, a dashed projection, the goal line, and the Lyon term shaded in, including the dip on the day flights and the deposit are paid.
@@ -112,7 +112,7 @@ backend/
     main.py         app setup
   alembic/          migrations
   scripts/seed.py   synthetic demo data
-  tests/            forecast tests
+  tests/            forecast and validation tests
 frontend/src/
   api/              typed API client
   components/       goal card, chart, breakdown, city toggle

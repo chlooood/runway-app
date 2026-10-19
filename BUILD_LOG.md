@@ -58,8 +58,8 @@ Working log of what was built, which software engineering concepts it demonstrat
 
 ## 2026-09-29 — Goal = cost of Lyon
 - **Built:** `scripts/seed.py` derives the goal target from the Lyon stay (`stay_cost`: upfront + monthly budget prorated over its 116 days, same `DAYS_PER_MONTH` as the forecast) → $7,764.28 by Jan 4, replacing the $5,000 placeholder.
-- **Concepts:** Single Source of Truth (target computed from the stay constants, not typed separately).
-- **Why:** deriving the target instead of hardcoding ~$7,764 — a hardcoded number silently goes stale the moment the Lyon budget changes.
+- **Concepts:** ~~Single Source of Truth~~ (withdrawn 2026-10-19: the derived value was stored in `goals.target_amount` as a plain number, so editing the stay never moved it. The target is now treated as user-entered; see the 2026-10-19 entry.)
+- **Why:** deriving the target instead of hardcoding ~$7,764 — a hardcoded number silently goes stale the moment the Lyon budget changes. (It went stale anyway, at the database level instead.)
 - **Verified:** 15/15 pytest; forecast gap at Jan 4 ($5,812.10) + Jan GST credit ($130.25) = end-of-Lyon balance ($5,942.36) within 1¢, so goal and projection agree.
 
 ## 2026-09-29 — docker-compose, users table, README
@@ -74,3 +74,9 @@ Working log of what was built, which software engineering concepts it demonstrat
 - **Why:** lead with outcomes and decisions rather than setup steps — a reviewer skims the top in seconds and rarely runs the project.
 - **Verified:** README claims checked against code (no `any` in `frontend/src`, 15 tests, every router uses `get_current_user`).
 
+
+## 2026-10-19 — Review fixes: local "today", user-entered goal, city normalization, indexes
+- **Built:** frontend sends `as_of` = the user's local date (`utils/format.localISODate`, built from local date parts; `toISOString()` is UTC). Seed stores the goal target as a plain user-entered `7764.28` (`stay_cost` removed). `schemas/common.City` trims, collapses spaces and capitalizes each word on write for expenses and planned stays; `?city=` on `/expenses` and the forecast is normalized the same way. Alembic `0004` replaces six single-column indexes on `expenses`/`income_events` with one `(user_id, date)` each; `0005` is a data migration that rewrites existing city names to the normalized form. `tests/test_schemas.py` (8 cases, 23 total).
+- **Concepts:** Time Zones (the client owns "today"), Input Normalization, Data Migrations (rule copied into the migration, not imported), Measure Before Optimizing (`EXPLAIN ANALYZE` before choosing indexes).
+- **Why:** a client-sent date instead of the server's `date.today()` — the server's day is wrong for a Vancouver user every evening once the API runs in UTC. Normalizing cities instead of a `cities` table — it catches the common variants ("toronto", " Toronto ") without new CRUD; a real misspelling still makes a new city, and a `cities` table to pick from is the fix if that matters.
+- **Verified:** 23/23 pytest; `tsc -b` + `oxlint` clean. On a throwaway compose DB (:5433): `TZ=UTC` API at 22:43 Vancouver time defaulted to 2026-10-19, and with the client's `as_of=2026-10-18` returned the 18th (projection differs by $10.89); `localISODate()` gave 2026-10-18 where `toISOString()` gave 2026-10-19. `EXPLAIN ANALYZE` with 500k synthetic expenses: the old category index made the planner read ~125k index entries for a 34-row result (3.5–4.3 ms → 0.04–0.06 ms after `0004`); per-user list 1.6–2.3 → 1.2–1.4 ms, still bitmap + sort, not an ordered index scan. `0005` merged "vancouver"/" VANCOUVER " into "Vancouver" and "lyon " into "Lyon"; `alembic check` clean; downgrade/upgrade round trips for 0004 and 0005. Test DB removed (`down -v`).
