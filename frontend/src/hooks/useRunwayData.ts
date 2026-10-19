@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getForecast, getGoals } from '../api/client'
 import type { City, Forecast, Goal } from '../api/types'
+import { localISODate } from '../utils/format'
 
 export type RunwayData =
   | { status: 'loading' }
@@ -32,7 +33,7 @@ export function useRunwayData(city: City | null): RunwayData {
   useEffect(() => {
     if (!goal) return
     let cancelled = false
-    getForecast(goal.id, city ?? undefined)
+    getForecast(goal.id, localISODate(), city ?? undefined)
       .then((result) => {
         if (cancelled) return
         setForecast(result)

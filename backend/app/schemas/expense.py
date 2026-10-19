@@ -2,14 +2,14 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.common import Money, PartialUpdate
+from app.schemas.common import City, Money, PartialUpdate
 
 
 class ExpenseBase(BaseModel):
     date: dt.date
     amount: Money
     category: str = Field(min_length=1, max_length=50)
-    city: str = Field(min_length=1, max_length=50)
+    city: City
 
 
 class ExpenseCreate(ExpenseBase):
@@ -20,7 +20,7 @@ class ExpenseUpdate(PartialUpdate):
     date: dt.date | None = None
     amount: Money | None = None
     category: str | None = Field(default=None, min_length=1, max_length=50)
-    city: str | None = Field(default=None, min_length=1, max_length=50)
+    city: City | None = None
 
 
 class ExpenseRead(ExpenseBase):

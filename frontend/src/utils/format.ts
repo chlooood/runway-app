@@ -14,6 +14,15 @@ const parseDate = (iso: string): Date => {
   return new Date(year, month - 1, day)
 }
 
+/**
+ * Today's date where the user is, as YYYY-MM-DD. Built from local date parts:
+ * `toISOString()` is UTC, so on a Vancouver evening it would already be tomorrow.
+ */
+export const localISODate = (date: Date = new Date()): string => {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 /** "Jan 4, 2027" */
 export const formatDate = (iso: string): string =>
   parseDate(iso).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })

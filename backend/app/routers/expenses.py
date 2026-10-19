@@ -7,6 +7,7 @@ from app.dependencies import get_current_user
 from app.models import Expense, User
 from app.routers.utils import get_owned_or_404
 from app.schemas import ExpenseCreate, ExpenseRead, ExpenseUpdate
+from app.schemas.common import normalize_city
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
@@ -21,7 +22,7 @@ def list_expenses(
     """List expenses by date, optionally filtered by city and/or category."""
     query = select(Expense).where(Expense.user_id == user.id).order_by(Expense.date)
     if city is not None:
-        query = query.where(Expense.city == city)
+        query = query.where(Expense.city == normalize_city(city))
     if category is not None:
         query = query.where(Expense.category == category)
     return db.scalars(query).all()

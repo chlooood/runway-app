@@ -83,9 +83,11 @@ export async function getExpenses(filters: { city?: City; category?: string } = 
   return data.map(toExpense)
 }
 
-export async function getForecast(goalId: number, city?: City): Promise<Forecast> {
+// `asOf` is the user's local date (YYYY-MM-DD). Sent explicitly because the server's
+// "today" is in the server's time zone, which may not be the user's.
+export async function getForecast(goalId: number, asOf: string, city?: City): Promise<Forecast> {
   const { data } = await http.get<ApiForecast>(`/goals/${goalId}/forecast`, {
-    params: city ? { city } : {},
+    params: city ? { as_of: asOf, city } : { as_of: asOf },
   })
   return toForecast(data)
 }

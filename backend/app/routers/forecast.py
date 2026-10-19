@@ -9,6 +9,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Expense, Goal, IncomeEvent, PlannedStay, User
 from app.routers.utils import get_owned_or_404
+from app.schemas.common import normalize_city
 from app.schemas.forecast import ForecastRead
 from app.services.forecast import UnknownCityError, forecast_goal
 
@@ -26,11 +27,15 @@ def get_goal_forecast(
     """Project savings through the goal date and any planned stays.
 
     `city` switches the home spending baseline (days outside planned stays).
+    `as_of` should be the user's local date. Without it the server's date is used,
+    which is a different day whenever the server's time zone is ahead of the user's.
     """
     goal = get_owned_or_404(db, Goal, goal_id, user)
     income = db.scalars(select(IncomeEvent).where(IncomeEvent.user_id == user.id)).all()
     expenses = db.scalars(select(Expense).where(Expense.user_id == user.id)).all()
     stays = db.scalars(select(PlannedStay).where(PlannedStay.user_id == user.id)).all()
+    if city is not None:
+        city = normalize_city(city)  # match how cities are stored
     try:
         result = forecast_goal(goal, income, expenses, as_of or dt.date.today(), city, stays)
     except UnknownCityError as exc:

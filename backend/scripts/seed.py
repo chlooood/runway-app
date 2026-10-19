@@ -20,14 +20,13 @@ Usage, from backend/:
 import argparse
 import datetime as dt
 from calendar import monthrange
-from decimal import ROUND_UP, Decimal
+from decimal import Decimal
 
 from faker import Faker
 from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
 from app.models import Expense, Goal, IncomeEvent, PlannedStay, User
-from app.services.forecast import DAYS_PER_MONTH
 
 DATA_START = dt.date(2026, 5, 1)
 
@@ -57,15 +56,11 @@ LYON_STAY = {
 }
 
 
-def stay_cost(stay: dict) -> Decimal:
-    """Upfront cost + monthly budget over the stay's days, prorated the same way the forecast does."""
-    days = (stay["end_date"] - stay["start_date"]).days + 1
-    prorated = stay["monthly_budget"] * days / DAYS_PER_MONTH
-    return (stay["upfront_cost"] + prorated).quantize(Decimal("0.01"), rounding=ROUND_UP)
-
-
-# The goal is "have enough for all of Lyon by the day before leaving" (≈ $7,764).
-GOAL = {"name": "Exchange fund", "target_amount": stay_cost(LYON_STAY), "target_date": dt.date(2027, 1, 4)}
+# The goal is "have enough for all of Lyon by the day before leaving". Its target is
+# user-entered, like any goal: the student added up the Lyon estimate above (upfront
+# 2,120 + 1,480/month over 116 days) and typed in the result. It is a plain number,
+# not linked to the stay, so editing the stay later does not move the goal.
+GOAL = {"name": "Exchange fund", "target_amount": Decimal("7764.28"), "target_date": dt.date(2027, 1, 4)}
 
 # Monthly spending baseline per city, by category. No rent, groceries, or phone:
 # those are covered. Toronto has a monthly TTC pass; Vancouver has a U-Pass.
